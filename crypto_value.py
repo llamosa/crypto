@@ -37,22 +37,23 @@ def ensure_number(data):
 
 cutoff = 0
 look_back = 15
-lag = 5
+lag = 1
 # read data as dataframe
 data_frame = pd.read_csv('C:/Users/home/Dropbox/crypto/CandlesJan2015-Dec2017.txt')
 #data_frame = pd.read_csv('C:/Users/home/Dropbox/crypto/ProcessedCandlesJan2015-Dec2017.txt')
 
 # data set up
 #dataTable = data_frame[[' Open', ' Close', ' Vol']].as_matrix()
-dataTable = data_frame[' Close'].as_matrix()[1:] - data_frame[' Close'].as_matrix()[:-1]
+dataTable = data_frame[' Close'].as_matrix()[:-1] - data_frame[' Close'].as_matrix()[1:]
+#dataTable = data_frame[' Close'].as_matrix()[1:] - data_frame[' Close'].as_matrix()[:-1]
 
 #Normilize by volume
 
-labels = (data_frame[' Close'].as_matrix()[1:] - data_frame[' Close'].as_matrix()[:-1]).reshape(len(data_frame[' Open'])-1,1)
+labels = (data_frame[' Close'].as_matrix()[:-1] - data_frame[' Close'].as_matrix()[1:]).reshape(len(data_frame[' Open'])-1,1)
 #labels = data_frame['Buy Sell'].as_matrix().reshape(len(data_frame['Buy Sell']),1)
-labels = labels[look_back+lag:,]
+labels = labels[0:labels.shape[0]-(look_back + lag),]
 
-data = np.atleast_3d(np.array([dataTable[start:start + look_back] for start in range(0, dataTable.shape[0] - (look_back+lag))]))
+data = np.atleast_3d(np.array([dataTable[start:start + look_back] for start in range(lag, dataTable.shape[0] - (look_back))]))
 #data = np.array([dataTable[start:start + look_back] for start in range(0, dataTable.shape[0] - look_back)])
 data = data.reshape((data.shape[0],data.shape[1]*data.shape[2]))
 
@@ -68,7 +69,7 @@ y[pos_id] = 1
 ensure_number(data)
 ensure_number(labels)
 
-train_fraction = 0.3
+train_fraction = 0.8
 cut = int(len(labels)*train_fraction)
 ids = np.arange(len(labels))
 np.random.shuffle(ids)
@@ -78,7 +79,7 @@ test_id = ids[cut:]
 if classic:
     partition=dd.Partition(trainset=train_id,testset=test_id)
     data = (data - np.min(data,axis=0))/(np.max(data,axis=0) - np.min(data,axis=0) )
-    model = dd.Model(data=np.hstack((data,y)), function=ml.RandF(parameters={'n_estimators':1000,'min_samples_split':1000}), partition=partition, nfo=3)
+    model = dd.Model(data=np.hstack((data,y)), function=ml.RandF(parameters={'n_estimators':500,'min_samples_split':500}), partition=partition, nfo=3)
     #model = dd.Model(data=np.hstack((data,labels)),function=ml.Sksvm(parameters={'regularization':0.1,'sigma':0.1}),partition=partition)
     model.training()
     #model.crossvalidating()
